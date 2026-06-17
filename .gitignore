@@ -31,6 +31,9 @@ debug/
 *.swo
 *~
 
+# Personal local notes / scratchpad
+TODO.local.md
+
 # OS
 .DS_Store
 Thumbs.db
