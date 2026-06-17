@@ -334,9 +334,11 @@ describe("formatExactTime", () => {
   });
 
   it("pads single-digit components with zeros", () => {
-    // January 5 at 3:04:07 UTC
-    const result = formatExactTime("2024-01-05T03:04:07Z");
-    expect(result).toMatch(/^\d{4}-01-05 \d{2}:\d{2}:\d{2}$/);
+    // formatExactTime renders in local time, so build the input from local
+    // components (round-tripped through ISO) to stay timezone-independent.
+    const local = new Date(2024, 0, 5, 3, 4, 7); // Jan 5 03:04:07 local
+    const result = formatExactTime(local.toISOString());
+    expect(result).toBe("2024-01-05 03:04:07");
   });
 });
 
