@@ -84,6 +84,42 @@
   --scrollbar-track: transparent;
 }
 
+/* ---- Light theme ----
+   Overrides only the structural surface/text/border tokens. Semantic accent
+   colors (models, context, pills, icons) are deliberately left as-is so the
+   CSS palette stays in sync with the inline colors in src/lib/theme.ts. */
+
+:root[data-theme="light"] {
+  /* Background */
+  --bg: #f4f5f8;
+  --bg-surface: #ffffff;
+  --bg-elevated: #eceef3;
+  --bg-hover: #e3e7ef;
+
+  /* Text hierarchy */
+  --text-primary: #1c2333;
+  --text-secondary: #4b5365;
+  --text-dim: #6b7280;
+  --text-muted: #99a0ad;
+
+  /* Accents — deepen the blue so it carries white button text on a light bg */
+  --accent: #2f6fd6;
+  --info: #3b5bdb;
+
+  /* Surfaces */
+  --border: #d3d7e0;
+
+  /* Status — soften pure red so it reads on a light surface */
+  --error: #c0392b;
+  --context-crit: #c0392b;
+
+  /* Picker */
+  --picker-selected-bg: #dde4f0;
+
+  /* Misc */
+  --scrollbar-thumb: #c3c8d4;
+}
+
 /* ---- Icon colors ---- */
 
 .icon--claude {
@@ -2441,6 +2477,47 @@ body {
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.settings-modal__theme {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  width: fit-content;
+}
+
+.settings-modal__theme-btn {
+  padding: 5px 16px;
+  border: none;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.settings-modal__theme-btn:not(:last-child) {
+  border-right: 1px solid var(--border);
+}
+
+.settings-modal__theme-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+.settings-modal__theme-btn--active:focus-visible {
+  outline-color: #fff;
+}
+
+.settings-modal__theme-btn:hover:not(.settings-modal__theme-btn--active) {
+  background: var(--bg-hover);
+}
+
+.settings-modal__theme-btn--active {
+  background: var(--accent);
+  color: #fff;
 }
 
 .settings-modal__input {

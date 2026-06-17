@@ -2,7 +2,11 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { openUrl } from "./lib/openUrl";
 import { App } from "./App";
+import { initTheme } from "./lib/themeMode";
 import "./styles/global.css";
+
+// Apply the persisted light/dark theme before first paint to avoid a flash.
+initTheme();
 
 // Intercept all link clicks and open external URLs in the system browser
 document.addEventListener("click", (e) => {

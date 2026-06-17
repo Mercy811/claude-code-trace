@@ -22,6 +22,8 @@ describe("SettingsModal", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
+    delete document.documentElement.dataset.theme;
     mockInvoke.mockImplementation((cmd: string) => {
       if (cmd === "get_settings") return Promise.resolve(makeSettings(null));
       if (cmd === "set_projects_dir") return Promise.resolve(makeSettings(null));
@@ -99,6 +101,45 @@ describe("SettingsModal", () => {
     });
     expect(onSaved).toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("defaults the theme control to dark and switches to light on click", async () => {
+    render(<SettingsModal onClose={onClose} onSaved={onSaved} />);
+    await waitFor(() => expect(screen.getByText(`Default: ${DEFAULT_DIR}`)).toBeInTheDocument());
+
+    const darkBtn = screen.getByRole("button", { name: "Dark" });
+    const lightBtn = screen.getByRole("button", { name: "Light" });
+    expect(darkBtn).toHaveAttribute("aria-pressed", "true");
+    expect(lightBtn).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(lightBtn);
+
+    expect(lightBtn).toHaveAttribute("aria-pressed", "true");
+    expect(darkBtn).toHaveAttribute("aria-pressed", "false");
+    expect(localStorage.getItem("cctrace-theme")).toBe("light");
+    expect(document.documentElement.dataset.theme).toBe("light");
+  });
+
+  it("reflects a persisted light theme on open", async () => {
+    localStorage.setItem("cctrace-theme", "light");
+    render(<SettingsModal onClose={onClose} onSaved={onSaved} />);
+    await waitFor(() => expect(screen.getByText(`Default: ${DEFAULT_DIR}`)).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "Light" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("switches back from light to dark", async () => {
+    localStorage.setItem("cctrace-theme", "light");
+    document.documentElement.dataset.theme = "light";
+    render(<SettingsModal onClose={onClose} onSaved={onSaved} />);
+    await waitFor(() => expect(screen.getByText(`Default: ${DEFAULT_DIR}`)).toBeInTheDocument());
+
+    const darkBtn = screen.getByRole("button", { name: "Dark" });
+    fireEvent.click(darkBtn);
+
+    expect(darkBtn).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Light" })).toHaveAttribute("aria-pressed", "false");
+    expect(localStorage.getItem("cctrace-theme")).toBe("dark");
+    expect(document.documentElement.dataset.theme).toBe("dark");
   });
 
   it("shows error when save fails", async () => {

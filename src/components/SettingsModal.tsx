@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { invoke } from "../lib/invoke";
 import { PopoutModal } from "./PopoutModal";
+import { getStoredTheme, setTheme, type ThemeMode } from "../lib/themeMode";
 
 interface SettingsResponse {
   projects_dir: string | null;
@@ -21,6 +22,13 @@ export function SettingsModal({ onClose, onSaved }: SettingsModalProps) {
   const [effectiveDirExists, setEffectiveDirExists] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [theme, setThemeState] = useState<ThemeMode>(getStoredTheme);
+
+  // Theme applies and persists immediately for live preview, independent of Save.
+  const handleThemeChange = useCallback((mode: ThemeMode) => {
+    setThemeState(mode);
+    setTheme(mode);
+  }, []);
 
   const applyResponse = useCallback((res: SettingsResponse) => {
     setDefaultDir(res.default_dir);
@@ -88,9 +96,24 @@ export function SettingsModal({ onClose, onSaved }: SettingsModalProps) {
       onClose={onClose}
       header={<span className="settings-modal__title">Settings</span>}
       initialWidth={520}
-      initialHeight={260}
+      initialHeight={340}
     >
       <div className="settings-modal">
+        <span className="settings-modal__label">Appearance</span>
+        <div className="settings-modal__theme" role="group" aria-label="Theme">
+          {(["dark", "light"] as const).map((mode) => (
+            <button
+              key={mode}
+              type="button"
+              className={`settings-modal__theme-btn${theme === mode ? " settings-modal__theme-btn--active" : ""}`}
+              aria-pressed={theme === mode}
+              onClick={() => handleThemeChange(mode)}
+            >
+              {mode === "dark" ? "Dark" : "Light"}
+            </button>
+          ))}
+        </div>
+
         <label className="settings-modal__label" htmlFor="projects-dir">
           Projects Directory
         </label>

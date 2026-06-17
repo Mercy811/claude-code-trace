@@ -255,6 +255,26 @@ Supports text search and project filtering (via `ProjectTree` selection).
 
 ---
 
+### `SettingsModal` — User Preferences
+
+A `PopoutModal` exposing user-configurable preferences:
+
+- **Appearance** — light/dark theme toggle. The choice applies immediately (live preview)
+  and persists to `localStorage` under `cctrace-theme`, independent of the Save button.
+- **Projects Directory** — overrides the discovery root; saved via `set_projects_dir`.
+
+Theme handling lives in `src/lib/themeMode.ts`:
+
+- `initTheme()` runs in `main.tsx` before first paint, reading the persisted preference and
+  setting `data-theme` on the document root (defaulting to `dark`).
+- `setTheme(mode)` persists and applies in one call.
+- The palette switch is pure CSS: `:root` holds the dark tokens; `:root[data-theme="light"]`
+  overrides only the structural surface/text/border tokens. Semantic accent colors (model
+  family, context gradient, pills, icons) are intentionally shared across themes to stay in
+  sync with the inline colors in `src/lib/theme.ts`.
+
+---
+
 ### `InfoBar` — Session Metadata
 
 Top bar showing: project · session_id (8 chars) · git branch · permission mode ·
