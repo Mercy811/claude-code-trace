@@ -416,8 +416,6 @@ export function App() {
         hasTeams={session.teams.length > 0}
         hasSession={!!session.sessionPath}
         onGoToSessions={goToSessions}
-        onExpandAll={expandAll}
-        onCollapseAll={collapseAll}
         onOpenTeams={openTeams}
         onOpenDebug={openDebug}
         onBackToList={backToList}

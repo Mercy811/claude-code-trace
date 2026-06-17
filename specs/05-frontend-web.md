@@ -154,17 +154,19 @@ flowchart LR
 
 ### `useViewActions` — Expand/Collapse Delegation
 
-Decouples the toolbar's "Expand All / Collapse All" buttons from the active view component.
+Decouples the `e` / `c` (expand-all / collapse-all) keyboard shortcuts from the active view
+component. (The toolbar no longer carries Expand/Collapse/Top/Bottom buttons — those were
+removed; expand/collapse is keyboard-driven.)
 
 ```mermaid
 flowchart LR
-    TB["ViewToolbar\n(calls useViewActionCallbacks)"]
-    TB -->|"expandAll()"| SLOT["actions ref"]
+    KB["App keymap\n(e / c → useViewActionCallbacks)"]
+    KB -->|"expandAll()"| SLOT["actions ref"]
     SLOT -->|"dispatch"| ML["MessageList\n(useRegisterViewActions)"]
 ```
 
-The toolbar holds a stable ref. The active view registers its handlers. When the toolbar fires,
-the view's handler executes without a re-render cycle.
+App holds a stable ref. The active view registers its handlers. When a shortcut fires, the
+view's handler executes without a re-render cycle.
 
 ---
 

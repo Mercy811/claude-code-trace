@@ -8,8 +8,6 @@ function defaultProps(overrides: Partial<Parameters<typeof ViewToolbar>[0]> = {}
     hasTeams: false,
     hasSession: false,
     onGoToSessions: vi.fn(),
-    onExpandAll: vi.fn(),
-    onCollapseAll: vi.fn(),
     onOpenTeams: vi.fn(),
     onOpenDebug: vi.fn(),
     onBackToList: vi.fn(),
@@ -19,15 +17,19 @@ function defaultProps(overrides: Partial<Parameters<typeof ViewToolbar>[0]> = {}
 }
 
 describe("ViewToolbar", () => {
-  describe("common buttons on all views", () => {
+  describe("common chrome on all views", () => {
     for (const view of ["list", "picker", "detail", "team", "debug"] as const) {
-      it(`${view} view shows Expand All, Collapse All, Top, Bottom`, () => {
+      it(`${view} view shows the Settings button`, () => {
         render(<ViewToolbar {...defaultProps({ view, hasSession: true })} />);
-        expect(screen.getByText("Expand All")).toBeInTheDocument();
-        expect(screen.getByText("Collapse All")).toBeInTheDocument();
-        expect(screen.getByText("Top")).toBeInTheDocument();
-        expect(screen.getByText("Bottom")).toBeInTheDocument();
         expect(screen.getByTitle("Settings")).toBeInTheDocument();
+      });
+
+      it(`${view} view does not render the removed Expand/Collapse/Top/Bottom buttons`, () => {
+        render(<ViewToolbar {...defaultProps({ view, hasSession: true })} />);
+        expect(screen.queryByText("Expand All")).not.toBeInTheDocument();
+        expect(screen.queryByText("Collapse All")).not.toBeInTheDocument();
+        expect(screen.queryByText("Top")).not.toBeInTheDocument();
+        expect(screen.queryByText("Bottom")).not.toBeInTheDocument();
       });
     }
   });
@@ -51,12 +53,6 @@ describe("ViewToolbar", () => {
 
       fireEvent.click(screen.getByText(/Sessions/));
       expect(props.onGoToSessions).toHaveBeenCalled();
-
-      fireEvent.click(screen.getByText("Expand All"));
-      expect(props.onExpandAll).toHaveBeenCalled();
-
-      fireEvent.click(screen.getByText("Collapse All"));
-      expect(props.onCollapseAll).toHaveBeenCalled();
 
       fireEvent.click(screen.getByText("Teams"));
       expect(props.onOpenTeams).toHaveBeenCalled();

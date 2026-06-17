@@ -9,43 +9,10 @@ interface ViewToolbarProps {
   hasTeams: boolean;
   hasSession: boolean;
   onGoToSessions: () => void;
-  onExpandAll: () => void;
-  onCollapseAll: () => void;
   onOpenTeams: () => void;
   onOpenDebug: () => void;
   onBackToList: () => void;
   onOpenSettings: () => void;
-}
-
-function scrollContent(to: "top" | "bottom") {
-  const el = document.querySelector(".main-content");
-  if (el) el.scrollTo({ top: to === "top" ? 0 : el.scrollHeight, behavior: "smooth" });
-}
-
-function CommonButtons({
-  onExpandAll,
-  onCollapseAll,
-}: {
-  onExpandAll: () => void;
-  onCollapseAll: () => void;
-}) {
-  return (
-    <>
-      <button className="view-toolbar__btn" onClick={onExpandAll}>
-        Expand All
-      </button>
-      <button className="view-toolbar__btn" onClick={onCollapseAll}>
-        Collapse All
-      </button>
-      <span className="view-toolbar__separator" />
-      <button className="view-toolbar__btn" onClick={() => scrollContent("top")}>
-        Top
-      </button>
-      <button className="view-toolbar__btn" onClick={() => scrollContent("bottom")}>
-        Bottom
-      </button>
-    </>
-  );
 }
 
 function RightButtons({ onOpenSettings }: { onOpenSettings: () => void }) {
@@ -77,8 +44,6 @@ export function ViewToolbar({
   hasTeams,
   hasSession,
   onGoToSessions,
-  onExpandAll,
-  onCollapseAll,
   onOpenTeams,
   onOpenDebug,
   onBackToList,
@@ -90,7 +55,6 @@ export function ViewToolbar({
         <button className="view-toolbar__btn" onClick={onGoToSessions}>
           <BackIcon /> Sessions
         </button>
-        <CommonButtons onExpandAll={onExpandAll} onCollapseAll={onCollapseAll} />
         <span className="view-toolbar__separator" />
         {hasTeams && (
           <button className="view-toolbar__btn" onClick={onOpenTeams}>
@@ -113,7 +77,6 @@ export function ViewToolbar({
             <BackIcon /> Back to Messages
           </button>
         )}
-        <CommonButtons onExpandAll={onExpandAll} onCollapseAll={onCollapseAll} />
         <RightButtons onOpenSettings={onOpenSettings} />
       </div>
     );
@@ -125,7 +88,6 @@ export function ViewToolbar({
       <button className="view-toolbar__btn" onClick={onBackToList}>
         <BackIcon /> Back to Messages
       </button>
-      <CommonButtons onExpandAll={onExpandAll} onCollapseAll={onCollapseAll} />
       <RightButtons onOpenSettings={onOpenSettings} />
     </div>
   );
