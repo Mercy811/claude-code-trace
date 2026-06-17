@@ -176,9 +176,25 @@ describe("SessionPicker", () => {
         onSearchChange={onSearchChange}
       />,
     );
-    const input = screen.getByPlaceholderText("Search sessions...");
+    const input = screen.getByPlaceholderText("Search sessions... (/)");
     fireEvent.change(input, { target: { value: "test" } });
     expect(onSearchChange).toHaveBeenCalledWith("test");
+  });
+
+  it("forwards searchInputRef to the search input (so '/' can focus it)", () => {
+    const ref = { current: null as HTMLInputElement | null };
+    render(
+      <SessionPicker
+        sessions={[]}
+        loading={false}
+        searchQuery=""
+        searchInputRef={ref}
+        selectedIndex={0}
+        onSelect={vi.fn()}
+        onSearchChange={vi.fn()}
+      />,
+    );
+    expect(ref.current).toBe(screen.getByPlaceholderText("Search sessions... (/)"));
   });
 
   it("selected session is highlighted", () => {

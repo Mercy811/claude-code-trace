@@ -246,6 +246,13 @@ Project key derivation is in `shared/projectTree.ts`:
 - Each segment becomes a tree node
 - Worktrees become children of the base project
 
+A search box at the top of the sidebar filters the tree by name (project / worktree / group)
+via `filterFlatItems` (see [11-project-tree.md](11-project-tree.md)). A filter spans the whole
+tree regardless of collapse state (matches inside collapsed subtrees are still surfaced).
+Pressing `/` focuses the box (or the SessionPicker's session search when the picker has focus).
+The "All Projects" row is always retained so the filter can be cleared from the tree; `Escape`
+in the box clears the query, or blurs the box once it is already empty.
+
 ---
 
 ### `SessionPicker` — Session List with Search

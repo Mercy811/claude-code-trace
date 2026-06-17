@@ -21,6 +21,7 @@ interface SessionPickerProps {
   sessions: SessionInfo[];
   loading: boolean;
   searchQuery: string;
+  searchInputRef?: React.Ref<HTMLInputElement>;
   selectedIndex: number;
   onSelect: (session: SessionInfo) => void;
   onSearchChange: (query: string) => void;
@@ -37,6 +38,7 @@ export function SessionPicker({
   sessions,
   loading,
   searchQuery,
+  searchInputRef,
   selectedIndex,
   onSelect,
   onSearchChange,
@@ -45,7 +47,6 @@ export function SessionPicker({
 }: SessionPickerProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const selectedRef = useScrollToSelected(selectedIndex);
-  const searchRef = useRef<HTMLInputElement>(null);
   const registerVisible = useVisibleSessions(onVisiblePathsChange ?? noop);
 
   const dateGroups = groupByDate(sessions);
@@ -80,10 +81,11 @@ export function SessionPicker({
           )}
         </div>
         <input
-          ref={searchRef}
+          ref={searchInputRef}
           className="picker__search"
           type="text"
-          placeholder="Search sessions..."
+          placeholder="Search sessions... (/)"
+          aria-label="Search sessions"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
         />

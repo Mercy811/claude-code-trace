@@ -280,6 +280,53 @@ export function flattenTree(roots: TreeNode[], collapsedKeys?: ReadonlySet<strin
   return items;
 }
 
+/**
+ * Filters a flat tree (as produced by `flattenTree`/`buildFlatItems`) by a
+ * name query. A node is kept when it matches, when any of its descendants
+ * match (so the path to a match stays visible), or when it is an ancestor of a
+ * match. Matching is case-insensitive substring on the display name, so it
+ * works for project names, worktree leaf names, and group headers alike.
+ *
+ * The "All Projects" root (key === null) is always kept as a reset affordance.
+ * An empty/whitespace query returns the input unchanged.
+ */
+export function filterFlatItems(items: FlatItem[], query: string): FlatItem[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return items;
+
+  const n = items.length;
+  const match = items.map((it) => it.name.toLowerCase().includes(q));
+  const keep: boolean[] = Array.from({ length: n }, () => false);
+
+  // Keep every match plus its whole subtree (the contiguous run of deeper items).
+  for (let i = 0; i < n; i++) {
+    if (!match[i]) continue;
+    keep[i] = true;
+    for (let j = i + 1; j < n && items[j].depth > items[i].depth; j++) {
+      keep[j] = true;
+    }
+  }
+
+  // Keep ancestors of every match using a stack of currently-open ancestors.
+  const stack: number[] = [];
+  for (let i = 0; i < n; i++) {
+    while (stack.length > 0 && items[stack[stack.length - 1]].depth >= items[i].depth) {
+      stack.pop();
+    }
+    if (match[i]) {
+      for (const a of stack) keep[a] = true;
+    }
+    stack.push(i);
+  }
+
+  // Always keep "All Projects" so the user can clear the filter from the tree.
+  for (let i = 0; i < n; i++) {
+    if (items[i].key === null) keep[i] = true;
+  }
+
+  return items.filter((_, i) => keep[i]);
+}
+
 // ---- Convenience ----
 
 /** Chains buildProjectNodes -> buildTree -> flattenTree and prepends "All Projects". */

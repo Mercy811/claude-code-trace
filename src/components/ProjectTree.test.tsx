@@ -529,4 +529,126 @@ describe("ProjectTree", () => {
     expect(parentIdx).toBeGreaterThan(0);
     expect(childIdx).toBeGreaterThan(parentIdx);
   });
+
+  describe("search", () => {
+    const searchSessions = [
+      makeSession({ path: "/home/user/.claude/projects/proj-a/s1.jsonl", cwd: "/x/backend-api" }),
+      makeSession({ path: "/home/user/.claude/projects/proj-b/s2.jsonl", cwd: "/x/frontend-web" }),
+    ];
+
+    it("renders the filter input and reports changes", () => {
+      const onSearchChange = vi.fn();
+      render(
+        <ProjectTree
+          sessions={searchSessions}
+          selectedProject={null}
+          onSelectProject={vi.fn()}
+          onSearchChange={onSearchChange}
+          onRefresh={vi.fn()}
+        />,
+      );
+      const input = screen.getByLabelText("Filter projects");
+      fireEvent.change(input, { target: { value: "front" } });
+      expect(onSearchChange).toHaveBeenCalledWith("front");
+    });
+
+    it("filters the visible tree by the search query", () => {
+      render(
+        <ProjectTree
+          sessions={searchSessions}
+          selectedProject={null}
+          searchQuery="frontend"
+          onSelectProject={vi.fn()}
+          onRefresh={vi.fn()}
+        />,
+      );
+      expect(screen.getByText("frontend-web")).toBeInTheDocument();
+      expect(screen.queryByText("backend-api")).not.toBeInTheDocument();
+      // All Projects stays visible as a reset affordance.
+      expect(screen.getByText("All Projects")).toBeInTheDocument();
+    });
+
+    it("shows an empty-state message when nothing matches", () => {
+      render(
+        <ProjectTree
+          sessions={searchSessions}
+          selectedProject={null}
+          searchQuery="zzz-nope"
+          onSelectProject={vi.fn()}
+          onRefresh={vi.fn()}
+        />,
+      );
+      expect(screen.getByText("No matching projects")).toBeInTheDocument();
+    });
+
+    it("clears the query on Escape when text is present", () => {
+      const onSearchChange = vi.fn();
+      render(
+        <ProjectTree
+          sessions={searchSessions}
+          selectedProject={null}
+          searchQuery="front"
+          onSelectProject={vi.fn()}
+          onSearchChange={onSearchChange}
+          onRefresh={vi.fn()}
+        />,
+      );
+      const input = screen.getByLabelText("Filter projects");
+      fireEvent.keyDown(input, { key: "Escape" });
+      expect(onSearchChange).toHaveBeenCalledWith("");
+    });
+
+    it("blurs the input on Escape when the query is already empty", () => {
+      const onSearchChange = vi.fn();
+      render(
+        <ProjectTree
+          sessions={searchSessions}
+          selectedProject={null}
+          searchQuery=""
+          onSelectProject={vi.fn()}
+          onSearchChange={onSearchChange}
+          onRefresh={vi.fn()}
+        />,
+      );
+      const input = screen.getByLabelText("Filter projects") as HTMLInputElement;
+      input.focus();
+      expect(document.activeElement).toBe(input);
+      fireEvent.keyDown(input, { key: "Escape" });
+      expect(document.activeElement).not.toBe(input);
+      expect(onSearchChange).not.toHaveBeenCalled();
+    });
+
+    it("finds a worktree leaf even when its parent project is collapsed", () => {
+      const worktreeSessions = [
+        makeSession({
+          path: "/home/user/.claude/projects/-Users-me-backend/s1.jsonl",
+          cwd: "/home/user/backend",
+        }),
+        makeSession({
+          path: "/home/user/.claude/projects/-Users-me-backend-worktrees-EC-789/s2.jsonl",
+          cwd: "/home/user/backend/worktrees/EC-789",
+        }),
+      ];
+      render(
+        <ProjectTree
+          sessions={worktreeSessions}
+          selectedProject={null}
+          collapsedKeys={new Set(["-Users-me-backend"])}
+          searchQuery="EC-789"
+          onSelectProject={vi.fn()}
+          onRefresh={vi.fn()}
+        />,
+      );
+      // Despite the parent being collapsed, the search surfaces the leaf.
+      expect(screen.getByText("EC-789")).toBeInTheDocument();
+    });
+
+    it("useProjectKeys filters keys to match the displayed tree", () => {
+      const { result } = renderHook(() => useProjectKeys(searchSessions, undefined, "frontend"));
+      const keys = result.current;
+      expect(keys[0]).toBeNull(); // All Projects always present
+      expect(keys.some((k) => k === "proj-b")).toBe(true);
+      expect(keys.some((k) => k === "proj-a")).toBe(false);
+    });
+  });
 });

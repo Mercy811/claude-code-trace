@@ -382,6 +382,38 @@ body {
   }
 }
 
+.project-tree__search-row {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.project-tree__search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 12px;
+  outline: none;
+}
+
+.project-tree__search:focus {
+  border-color: var(--accent);
+}
+
+.project-tree__search::placeholder {
+  color: var(--text-muted);
+}
+
+.project-tree__empty {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
 .project-tree__list {
   flex: 1;
   overflow-y: auto;

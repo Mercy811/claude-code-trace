@@ -3,7 +3,7 @@ import type { SessionInfo } from "../types";
 import { useScrollToSelected } from "../hooks/useScrollToSelected";
 import { RefreshIcon, GitBranchIcon, GitMergeIcon } from "./Icons";
 import { OngoingDots } from "./OngoingDots";
-import { buildFlatItems } from "../../shared/projectTree";
+import { buildFlatItems, filterFlatItems } from "../../shared/projectTree";
 import type { FlatItem } from "../../shared/projectTree";
 
 /** Stable no-op default so the prop doesn't create a new reference each render. */
@@ -15,8 +15,11 @@ interface ProjectTreeProps {
   highlightedIndex?: number;
   isFocused?: boolean;
   collapsedKeys?: ReadonlySet<string>;
+  searchQuery?: string;
+  searchInputRef?: React.Ref<HTMLInputElement>;
   onSelectProject: (project: string | null) => void;
   onToggleCollapse?: (key: string) => void;
+  onSearchChange?: (query: string) => void;
   onRefresh: () => void;
   onFocus?: () => void;
   refreshing?: boolean;
@@ -24,25 +27,47 @@ interface ProjectTreeProps {
 }
 
 /**
+ * The flat list of items as displayed in the tree, after applying the name
+ * filter. When a search is active the collapse state is ignored so matches
+ * inside collapsed subtrees are still found (searching implicitly expands the
+ * tree); with no search, collapse state is honoured as normal.
+ */
+export function visibleProjectItems(
+  sessions: SessionInfo[],
+  collapsedKeys?: ReadonlySet<string>,
+  search?: string,
+): FlatItem[] {
+  const q = (search ?? "").trim();
+  const flat = buildFlatItems(sessions, q ? undefined : collapsedKeys);
+  return filterFlatItems(flat, q);
+}
+
+/**
  * Returns the ordered list of selectable keys as displayed in the tree.
  * Index 0 = null ("All Projects"), then project keys and group keys in tree order.
+ * When `search` is set, the list is filtered to match the displayed (filtered) tree.
  */
 export function useProjectKeys(
   sessions: SessionInfo[],
   collapsedKeys?: ReadonlySet<string>,
+  search?: string,
 ): (string | null)[] {
-  return useMemo(() => {
-    const flat = buildFlatItems(sessions, collapsedKeys);
-    return flat.map((f) => f.key);
-  }, [sessions, collapsedKeys]);
+  return useMemo(
+    () => visibleProjectItems(sessions, collapsedKeys, search).map((f) => f.key),
+    [sessions, collapsedKeys, search],
+  );
 }
 
-/** Returns the full FlatItem list as displayed in the tree. */
+/** Returns the full FlatItem list as displayed in the tree (filtered by `search`). */
 export function useProjectItems(
   sessions: SessionInfo[],
   collapsedKeys?: ReadonlySet<string>,
+  search?: string,
 ): FlatItem[] {
-  return useMemo(() => buildFlatItems(sessions, collapsedKeys), [sessions, collapsedKeys]);
+  return useMemo(
+    () => visibleProjectItems(sessions, collapsedKeys, search),
+    [sessions, collapsedKeys, search],
+  );
 }
 
 // Horizontal spacing per depth level (px).
@@ -92,19 +117,24 @@ export function ProjectTree({
   highlightedIndex = 0,
   isFocused = false,
   collapsedKeys,
+  searchQuery = "",
+  searchInputRef,
   onSelectProject,
   onToggleCollapse = noop,
+  onSearchChange = noop,
   onRefresh,
   onFocus,
   refreshing,
   style,
 }: ProjectTreeProps) {
   const allItems = useMemo(
-    () => buildFlatItems(sessions, collapsedKeys),
-    [sessions, collapsedKeys],
+    () => visibleProjectItems(sessions, collapsedKeys, searchQuery),
+    [sessions, collapsedKeys, searchQuery],
   );
 
   const scrollRef = useScrollToSelected(highlightedIndex);
+  // Only "All Projects" survives the filter → no real matches.
+  const noMatches = searchQuery.trim() !== "" && allItems.every((it) => it.key === null);
 
   return (
     <div
@@ -125,6 +155,26 @@ export function ProjectTree({
           <RefreshIcon />
         </button>
       </div>
+      <div className="project-tree__search-row">
+        <input
+          ref={searchInputRef}
+          className="project-tree__search"
+          type="text"
+          placeholder="Filter projects... (/)"
+          aria-label="Filter projects"
+          value={searchQuery}
+          spellCheck={false}
+          onChange={(e) => onSearchChange(e.target.value)}
+          onKeyDown={(e) => {
+            // Escape clears the query, or blurs the box once it is already empty.
+            if (e.key === "Escape") {
+              if (searchQuery) onSearchChange("");
+              else e.currentTarget.blur();
+            }
+          }}
+        />
+      </div>
+      {noMatches && <div className="project-tree__empty">No matching projects</div>}
       <div className="project-tree__list">
         {allItems.map((item, idx) => {
           const isSelected = !item.isGroup && selectedProject === item.key;

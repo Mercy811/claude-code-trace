@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { invoke } from "./lib/invoke";
 import type { ViewState, SessionInfo } from "./types";
 import { useSession } from "./hooks/useSession";
@@ -14,7 +14,7 @@ import { DebugViewer } from "./components/DebugViewer";
 import { InfoBar } from "./components/InfoBar";
 import { KeybindBar } from "./components/KeybindBar";
 import { ViewToolbar } from "./components/ViewToolbar";
-import { ProjectTree, useProjectKeys, useProjectItems } from "./components/ProjectTree";
+import { ProjectTree, useProjectItems } from "./components/ProjectTree";
 import { ResizeHandle } from "./components/ResizeHandle";
 import { SettingsModal } from "./components/SettingsModal";
 
@@ -29,6 +29,27 @@ export function App() {
   const [sidebarHighlight, setSidebarHighlight] = useState(0); // index in project list (0 = "All")
   const [showSettings, setShowSettings] = useState(false);
   const [collapsedKeys, setCollapsedKeys] = useState<Set<string>>(new Set());
+  const [projectSearch, setProjectSearch] = useState("");
+
+  // Refs to the two search inputs so the "/" shortcut can focus them.
+  const projectSearchRef = useRef<HTMLInputElement>(null);
+  const sessionSearchRef = useRef<HTMLInputElement>(null);
+
+  // Filtering the tree changes the visible row order, so reset the keyboard
+  // highlight to the top to keep it in range.
+  const handleProjectSearchChange = useCallback((query: string) => {
+    setProjectSearch(query);
+    setSidebarHighlight(0);
+  }, []);
+
+  const focusProjectSearch = useCallback(() => {
+    setSidebarFocused(true);
+    projectSearchRef.current?.focus();
+  }, []);
+
+  const focusSessionSearch = useCallback(() => {
+    sessionSearchRef.current?.focus();
+  }, []);
 
   const toggleCollapse = useCallback((key: string) => {
     setCollapsedKeys((prev) => {
@@ -51,8 +72,15 @@ export function App() {
 
   const session = useSession();
   const picker = usePicker(selectedProject);
-  const projectKeys = useProjectKeys(picker.allSessions, collapsedKeys);
-  const projectItems = useProjectItems(picker.allSessions, collapsedKeys);
+  const projectItems = useProjectItems(picker.allSessions, collapsedKeys, projectSearch);
+  // Derived from projectItems so the tree is only traversed once per change.
+  const projectKeys = useMemo(() => projectItems.map((i) => i.key), [projectItems]);
+
+  // Keep the sidebar highlight in range when the visible row count shrinks
+  // (e.g. a session disappears while a filter is active).
+  useEffect(() => {
+    setSidebarHighlight((i) => Math.min(i, Math.max(0, projectKeys.length - 1)));
+  }, [projectKeys.length]);
 
   const { loadSession, loadDebugLog, sessionPath } = session;
   const { discoverSessions, updateSessionOngoing } = picker;
@@ -218,6 +246,7 @@ export function App() {
       const item = projectItems[sidebarHighlight];
       if (item?.hasChildren && item.key && item.isExpanded) toggleCollapse(item.key);
     };
+    keyMap["/"] = focusProjectSearch;
     keyMap["?"] = toggleKeybinds;
   } else {
     switch (view) {
@@ -242,6 +271,7 @@ export function App() {
         keyMap["q"] = goToSessions;
         keyMap["Escape"] = goToSessions;
         keyMap["s"] = goToSessions;
+        keyMap["/"] = focusProjectSearch;
         keyMap["?"] = toggleKeybinds;
         keyMap["h"] = () => setSidebarFocused(true);
         keyMap["ArrowLeft"] = () => setSidebarFocused(true);
@@ -265,6 +295,7 @@ export function App() {
         };
         keyMap["q"] = backToList;
         keyMap["Escape"] = backToList;
+        keyMap["/"] = focusSessionSearch;
         keyMap["?"] = toggleKeybinds;
         keyMap["h"] = () => setSidebarFocused(true);
         keyMap["ArrowLeft"] = () => setSidebarFocused(true);
@@ -311,6 +342,7 @@ export function App() {
             sessions={picker.sessions}
             loading={picker.loading}
             searchQuery={picker.searchQuery}
+            searchInputRef={sessionSearchRef}
             selectedIndex={pickerSelectedIndex}
             onSelect={handleSelectSession}
             onSearchChange={picker.setSearchQuery}
@@ -399,8 +431,11 @@ export function App() {
           highlightedIndex={sidebarHighlight}
           isFocused={sidebarFocused}
           collapsedKeys={collapsedKeys}
+          searchQuery={projectSearch}
+          searchInputRef={projectSearchRef}
           onSelectProject={handleSelectProject}
           onToggleCollapse={toggleCollapse}
+          onSearchChange={handleProjectSearchChange}
           onRefresh={loadProjectDirs}
           onFocus={() => setSidebarFocused(true)}
           refreshing={picker.loading}

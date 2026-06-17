@@ -8,6 +8,7 @@ import {
   detectWorktreeKind,
   worktreeLeafName,
   buildFlatItems,
+  filterFlatItems,
   type FlatItem,
 } from "./projectTree";
 
@@ -433,5 +434,75 @@ describe("buildFlatItems", () => {
     expect(keys[1]).toBe("-Users-me-backend");
     expect(keys[2]).toBe("__group:worktrees:-Users-me-backend");
     expect(keys[3]).toBe("-Users-me-backend-worktrees-EC-789");
+  });
+});
+
+describe("filterFlatItems", () => {
+  const sessions = [
+    makeSession({
+      path: "/home/user/.claude/projects/-Users-me-backend/s1.jsonl",
+      cwd: "/home/user/backend",
+    }),
+    makeSession({
+      path: "/home/user/.claude/projects/-Users-me-backend-worktrees-EC-789/s2.jsonl",
+      cwd: "/home/user/backend/worktrees/EC-789",
+    }),
+    makeSession({
+      path: "/home/user/.claude/projects/-Users-me-frontend/s3.jsonl",
+      cwd: "/home/user/frontend",
+    }),
+  ];
+
+  it("returns the input unchanged for an empty or whitespace query", () => {
+    const items = buildFlatItems(sessions);
+    expect(filterFlatItems(items, "")).toBe(items);
+    expect(filterFlatItems(items, "   ")).toBe(items);
+  });
+
+  it("keeps a matching project and always keeps All Projects", () => {
+    const items = buildFlatItems(sessions);
+    const names = filterFlatItems(items, "frontend").map((i) => i.name);
+    expect(names).toContain("All Projects");
+    expect(names).toContain("frontend");
+    expect(names).not.toContain("backend");
+  });
+
+  it("is case-insensitive", () => {
+    const items = buildFlatItems(sessions);
+    const names = filterFlatItems(items, "FRONTEND").map((i) => i.name);
+    expect(names).toContain("frontend");
+  });
+
+  it("keeps ancestors and the group header when a worktree leaf matches", () => {
+    const items = buildFlatItems(sessions);
+    const keys = filterFlatItems(items, "EC-789").map((i) => i.key);
+    expect(keys).toContain(null); // All Projects
+    expect(keys).toContain("-Users-me-backend"); // ancestor project
+    expect(keys).toContain("__group:worktrees:-Users-me-backend"); // group header
+    expect(keys).toContain("-Users-me-backend-worktrees-EC-789"); // the match
+    expect(keys).not.toContain("-Users-me-frontend");
+  });
+
+  it("matching a parent keeps its whole subtree", () => {
+    const items = buildFlatItems(sessions);
+    const keys = filterFlatItems(items, "backend").map((i) => i.key);
+    // The parent matches → group header and worktree leaf are retained.
+    expect(keys).toContain("-Users-me-backend");
+    expect(keys).toContain("__group:worktrees:-Users-me-backend");
+    expect(keys).toContain("-Users-me-backend-worktrees-EC-789");
+    expect(keys).not.toContain("-Users-me-frontend");
+  });
+
+  it("matching a worktree group header keyword keeps the group", () => {
+    const items = buildFlatItems(sessions);
+    const names = filterFlatItems(items, "worktrees").map((i) => i.name);
+    expect(names).toContain("worktrees");
+  });
+
+  it("returns only All Projects when nothing matches", () => {
+    const items = buildFlatItems(sessions);
+    const result = filterFlatItems(items, "nonexistent-zzz");
+    expect(result).toHaveLength(1);
+    expect(result[0].key).toBeNull();
   });
 });

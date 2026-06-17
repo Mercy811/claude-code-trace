@@ -121,6 +121,29 @@ flowchart TD
 
 ---
 
+## Name Filtering
+
+`filterFlatItems(items, query)` filters the flattened tree (the output of `buildFlatItems`)
+by a case-insensitive substring match on each node's display name. It powers the projects-pane
+search box.
+
+```mermaid
+flowchart TD
+    Q["query"]
+    Q --> MATCH["mark nodes whose name\ncontains the query"]
+    MATCH --> SUB["keep each match\n+ its whole subtree"]
+    SUB --> ANC["keep ancestors of\nevery match (path stays visible)"]
+    ANC --> ALL["always keep 'All Projects'\n(key === null) as a reset row"]
+```
+
+- An empty/whitespace query returns the input array unchanged (same reference).
+- Matching works uniformly on project names, worktree leaf names, and group headers
+  (`worktrees` / `claude-worktrees`), so e.g. searching `worktree` surfaces the group.
+- The web `useProjectKeys`/`useProjectItems` hooks apply the same filter, keeping keyboard
+  navigation indices in sync with the rendered (filtered) rows.
+
+---
+
 ## Integration Points
 
 | Consumer              | Usage                                             |
